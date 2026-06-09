@@ -365,7 +365,7 @@
             }
         }
 
-        window.sellItem = async function(id) {
+window.sellItem = async function(id) {
             const item = inventory.find(snack => snack.id === id);
             const currentStock = parseInt(item.quantity);
             
@@ -375,38 +375,34 @@
             }
 
             const studentName = prompt(`Selling ${item.name}.\nEnter Student's Name:`);
-            if (studentName === null || studentName.trim() === "") return;
+            if (!studentName || studentName.trim() === "") return;
 
-            // Updated question right here!
             const qtyInput = prompt("How many items?", "1");
             if (qtyInput === null) return;
             
             const sellQty = parseInt(qtyInput);
-            if (isNaN(sellQty) || sellQty <= 0) {
-                alert("Invalid quantity. Sale cancelled.");
+            if (isNaN(sellQty) || sellQty <= 0 || sellQty > currentStock) {
+                alert("Invalid quantity or not enough stock.");
                 return;
             }
 
-            if (sellQty > currentStock) {
-                alert(`Not enough stock! You only have ${currentStock} available.`);
-                return;
-            }
+            // NEW: Prompt for payment method
+            const paymentType = prompt("How did they pay? (Type 'm' for Merits, 'k' for Kyats)");
+            if (!paymentType) return;
 
-            const sellerName = prompt("Enter Seller's Name (Who is authorizing this sale?):");
-            if (sellerName === null || sellerName.trim() === "") return;
+            const sellerName = prompt("Authorized by:");
+            if (!sellerName) return;
 
             statusMsg.innerText = "Processing purchase...";
             const newQty = currentStock - sellQty;
-            const cleanDate = new Date().toLocaleDateString();
-            
             const totalCost = parseInt(item.price) * sellQty;
-            const purchaseDescription = sellQty > 1 ? `${sellQty}x ${item.name}` : item.name;
 
             const newSale = {
                 studentName: studentName.trim(),
-                snackName: purchaseDescription,
+                snackName: sellQty > 1 ? `${sellQty}x ${item.name}` : item.name,
                 pricePaid: totalCost.toString(),
-                date: cleanDate,
+                paymentType: paymentType.toLowerCase().trim(), // 'm' or 'k'
+                date: new Date().toLocaleDateString(),
                 sellerName: sellerName.trim()
             };
 
@@ -423,7 +419,7 @@
 
                 loadAllData();
             } catch (error) {
-                alert("Cloud sync paused.");
+                alert("Cloud sync failed. Check your internet.");
             }
         }
 

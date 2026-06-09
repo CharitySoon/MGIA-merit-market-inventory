@@ -300,32 +300,53 @@
             });
         }
 
-        function renderSales() {
+       window.renderSales = function() {
             salesList.innerHTML = '';
             if (!salesLog || salesLog.length === 0 || salesLog.error) {
                 salesList.innerHTML = '<p style="text-align:center; color:#64748b;">No purchases logged yet.</p>';
                 return;
             }
 
-            const sortedSales = [...salesLog].reverse();
+            // 1. Group data by Date and Payment Type
+            const dailyData = {};
+            salesLog.forEach(sale => {
+                const date = sale.date || "Unknown";
+                const type = (sale.paymentType || 'm').toLowerCase() === 'k' ? 'Kyats' : 'Merits';
+                const amount = parseFloat(sale.pricePaid) || 0;
 
-            sortedSales.forEach(sale => {
-                if(!sale.studentName) return;
-                const card = document.createElement('div');
-                card.className = 'sales-card';
-                card.innerHTML = `
-                    <div class="sales-info">
-                        <h3>👤 ${sale.studentName}</h3>
-                        <p>Bought ${sale.snackName} for ${sale.pricePaid} merits</p>
-                        <p style="color: #4f46e5; font-weight: 500; font-size: 0.8rem; margin-top: 4px;">🔑 Authorized by: ${sale.sellerName || 'Not recorded'}</p>
-                    </div>
-                    <div style="color: #64748b; font-size: 0.85rem; font-weight: 500;">
-                        📅 ${sale.date}
-                    </div>
-                `;
-                salesList.appendChild(card);
+                if (!dailyData[date]) {
+                    dailyData[date] = { Merits: 0, Kyats: 0 };
+                }
+                dailyData[date][type] += amount;
             });
-        }
+
+            // 2. Build Daily Summary UI
+            let summaryHtml = '<div style="background:#f1f5f9; padding:15px; border-radius:10px; margin-bottom:20px;"><h3>Daily Earnings Report</h3>';
+            for (let date in dailyData) {
+                summaryHtml += `
+                    <div style="margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
+                        <strong>📅 ${date}</strong>: 🪙 ${dailyData[date].Merits} Merits | 💵 ${dailyData[date].Kyats} Kyats
+                    </div>`;
+            }
+            summaryHtml += '</div>';
+
+            // 3. Build Recent Purchases List
+            let listHtml = '<h3>Recent Purchases</h3>';
+            [...salesLog].reverse().forEach(sale => {
+                if(!sale.studentName) return;
+                const displayType = (sale.paymentType || 'm').toLowerCase() === 'k' ? 'Kyats' : 'Merits';
+                listHtml += `
+                    <div class="sales-card">
+                        <div class="sales-info">
+                            <h3>👤 ${sale.studentName}</h3>
+                            <p>Bought ${sale.snackName} for ${sale.pricePaid} ${displayType}</p>
+                            <p style="color: #4f46e5; font-weight: 500; font-size: 0.8rem;">🔑 Authorized by: ${sale.sellerName || 'N/A'}</p>
+                        </div>
+                        <div style="color: #64748b; font-size: 0.85rem; font-weight: 500;">📅 ${sale.date}</div>
+                    </div>`;
+            });
+            salesList.innerHTML = summaryHtml + listHtml;
+        };
 
         snackForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -347,7 +368,6 @@
                 alert("Failed to save snack.");
             }
         });
-
         window.changeQty = async function(id, change) {
             statusMsg.innerText = "Updating stock...";
             const item = inventory.find(snack => snack.id === id);

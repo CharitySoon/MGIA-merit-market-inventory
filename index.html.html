@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGIA's Merit Market</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h1 { margin-bottom: 5px; color: var(--primary); }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            background: #e2e8f0;
+            color: var(--text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .snack-form {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label { font-weight: 600; font-size: 0.9rem; }
+        input {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+
+        .inventory-list, .sales-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .snack-card, .sales-card {
+            background: var(--surface);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary);
+        }
+
+        .snack-card.low-stock {
+            border-left-color: var(--danger);
+            background: #fef2f2;
+        }
+
+        .sales-card {
+            border-left-color: var(--success);
+        }
+
+        .snack-info h3, .sales-info h3 { margin: 0 0 5px 0; }
+        .snack-info p, .sales-info p { margin: 0; color: #64748b; font-size: 0.9rem; }
+
+        .snack-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .qty-badge {
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .low-stock-alert {
+            color: var(--danger);
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        .btn-qty {
+            background: #e2e8f0;
+            color: var(--text);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            padding: 0;
+        }
+        .btn-qty:hover { background: #cbd5e1; }
+
+        .btn-sell {
+            background: var(--success);
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        
+        .status-msg {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🏫 MGIA's Merit Market</h1>
+            <p>Permanent Free Cloud Tracker & Sales Registry</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('inventory-page')">📦 Market Inventory</button>
+            <button class="tab-btn" onclick="switchTab('sales-page')">📋 Student Purchases</button>
+        </div>
+
+        <div class="status-msg" id="statusMsg">Connecting to free permanent database...</div>
+
+        <div id="inventory-page" class="page active">
+            <form class="snack-form" id="snackForm">
+                <div class="form-group">
+                    <label for="name">Snack Name</label>
+                    <input type="text" id="name" placeholder="e.g., Cheetos" required>
+                </div>
+                <div class="form-group">
+                    <label for="price">Cost (Merits)</label>
+                    <input type="number" id="price" step="1" placeholder="5" required>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Initial Stock</label>
+                    <input type="number" id="quantity" placeholder="20" required>
+                </div>
+                <button type="submit">Add Item</button>
+            </form>
+
+            <div class="inventory-list" id="inventoryList"></div>
+        </div>
+
+        <div id="sales-page" class="page">
+            <h2 style="margin-bottom: 15px;">Recent Purchases</h2>
+            <div class="sales-list" id="salesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzmgYZX1Tou55reZ_NGmk5UM3UEn1bVV5DLGaD1mwQK2lRN6UG_pwz6STBpeO9Og5Ve/exec";
+
+        let inventory = [];
+        let salesLog = [];
+        const snackForm = document.getElementById('snackForm');
+        const inventoryList = document.getElementById('inventoryList');
+        const salesList = document.getElementById('salesList');
+        const statusMsg = document.getElementById('statusMsg');
+
+        window.switchTab = function(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(pageId).classList.add('active');
+            if(window.event) window.event.target.classList.add('active');
+        }
+
+        async function loadAllData() {
+            try {
+                const resStock = await fetch(API_URL + "?sheet=Sheet1");
+                inventory = await resStock.json();
+                renderInventory();
+
+                try {
+                    const resSales = await fetch(API_URL + "?sheet=Sales");
+                    salesLog = await resSales.json();
+                } catch (e) {
+                    console.log("Sales data loading.");
+                }
+                renderSales();
+
+                statusMsg.innerText = "Cloud Synced ✅ (Unlimited Free Account)";
+            } catch (error) {
+                statusMsg.innerText = "Syncing with Google Cloud...";
+                console.error(error);
+            }
+        }
+
+        function renderInventory() {
+            inventoryList.innerHTML = '';
+            if (!inventory || inventory.length === 0 || inventory.error) {
+                inventoryList.innerHTML = '<p style="text-align:center; color:#64748b;">Market is empty. Add your first item above!</p>';
+                return;
+            }
+
+            inventory.forEach(item => {
+                if(!item.name) return;
+                const isLow = parseInt(item.quantity) <= 3;
+                const card = document.createElement('div');
+                card.className = `snack-card ${isLow ? 'low-stock' : ''}`;
+                
+                let displayPrice = parseInt(item.price);
+                if (isNaN(displayPrice)) { displayPrice = item.price || 0; }
+                
+                card.innerHTML = `
+                    <div class="snack-info">
+                        <h3>${item.name}</h3>
+                        <p>${displayPrice} merits each</p>
+                        ${isLow ? '<div class="low-stock-alert">⚠️ Low Stock!</div>' : ''}
+                    </div>
+                    <div class="snack-actions">
+                        <button class="btn-qty" onclick="changeQty('${item.id}', -1)">-</button>
+                        <span class="qty-badge">${item.quantity || 0}</span>
+                        <button class="btn-qty" onclick="changeQty('${item.id}', 1)">+</button>
+                        <button class="btn-sell" onclick="sellItem('${item.id}')">🛒 Sell Item</button>
+                        <button class="btn-delete" onclick="deleteItem('${item.id}', '${item.name}')">🗑️ Delete</button>
+                    </div>
+                `;
+                inventoryList.appendChild(card);
+            });
+        }
+
+        function renderSales() {
+            salesList.innerHTML = '';
+            if (!salesLog || salesLog.length === 0 || salesLog.error) {
+                salesList.innerHTML = '<p style="text-align:center; color:#64748b;">No purchases logged yet.</p>';
+                return;
+            }
+
+            const sortedSales = [...salesLog].reverse();
+
+            sortedSales.forEach(sale => {
+                if(!sale.studentName) return;
+                const card = document.createElement('div');
+                card.className = 'sales-card';
+                card.innerHTML = `
+                    <div class="sales-info">
+                        <h3>👤 ${sale.studentName}</h3>
+                        <p>Bought ${sale.snackName} for ${sale.pricePaid} merits</p>
+                        <p style="color: #4f46e5; font-weight: 500; font-size: 0.8rem; margin-top: 4px;">🔑 Authorized by: ${sale.sellerName || 'Not recorded'}</p>
+                    </div>
+                    <div style="color: #64748b; font-size: 0.85rem; font-weight: 500;">
+                        📅 ${sale.date}
+                    </div>
+                `;
+                salesList.appendChild(card);
+            });
+        }
+
+        snackForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusMsg.innerText = "Adding item...";
+            
+            const name = document.getElementById('name').value;
+            const price = document.getElementById('price').value;
+            const quantity = document.getElementById('quantity').value;
+            const id = "ID-" + Date.now();
+
+            try {
+                await fetch(API_URL + "?sheet=Sheet1&action=CREATE", {
+                    method: "POST",
+                    body: JSON.stringify({ data: [{ id, name, price, quantity }] })
+                });
+                snackForm.reset();
+                loadAllData();
+            } catch (error) {
+                alert("Failed to save snack.");
+            }
+        });
+
+        window.changeQty = async function(id, change) {
+            statusMsg.innerText = "Updating stock...";
+            const item = inventory.find(snack => snack.id === id);
+            if (item) {
+                const newQty = Math.max(0, parseInt(item.quantity) + change);
+                try {
+                    await fetch(`${API_URL}?sheet=Sheet1&action=UPDATE&id=${id}`, {
+                        method: "POST",
+                        body: JSON.stringify({ data: { quantity: newQty.toString() } })
+                    });
+                    loadAllData();
+                } catch (error) {
+                    alert("Failed to update stock.");
+                }
+            }
+        }
+
+        window.sellItem = async function(id) {
+            const item = inventory.find(snack => snack.id === id);
+            const currentStock = parseInt(item.quantity);
+            
+            if (!item || currentStock <= 0) {
+                alert("Out of stock! Cannot make a sale.");
+                return;
+            }
+
+            const studentName = prompt(`Selling ${item.name}.\nEnter Student's Name:`);
+            if (studentName === null || studentName.trim() === "") return;
+
+            // Updated question right here!
+            const qtyInput = prompt("How many items?", "1");
+            if (qtyInput === null) return;
+            
+            const sellQty = parseInt(qtyInput);
+            if (isNaN(sellQty) || sellQty <= 0) {
+                alert("Invalid quantity. Sale cancelled.");
+                return;
+            }
+
+            if (sellQty > currentStock) {
+                alert(`Not enough stock! You only have ${currentStock} available.`);
+                return;
+            }
+
+            const sellerName = prompt("Enter Seller's Name (Who is authorizing this sale?):");
+            if (sellerName === null || sellerName.trim() === "") return;
+
+            statusMsg.innerText = "Processing purchase...";
+            const newQty = currentStock - sellQty;
+            const cleanDate = new Date().toLocaleDateString();
+            
+            const totalCost = parseInt(item.price) * sellQty;
+            const purchaseDescription = sellQty > 1 ? `${sellQty}x ${item.name}` : item.name;
+
+            const newSale = {
+                studentName: studentName.trim(),
+                snackName: purchaseDescription,
+                pricePaid: totalCost.toString(),
+                date: cleanDate,
+                sellerName: sellerName.trim()
+            };
+
+            try {
+                await fetch(`${API_URL}?sheet=Sheet1&action=UPDATE&id=${id}`, {
+                    method: "POST",
+                    body: JSON.stringify({ data: { quantity: newQty.toString() } })
+                });
+
+                await fetch(API_URL + "?sheet=Sales&action=CREATE", {
+                    method: "POST",
+                    body: JSON.stringify({ data: [newSale] })
+                });
+
+                loadAllData();
+            } catch (error) {
+                alert("Cloud sync paused.");
+            }
+        }
+
+        window.deleteItem = async function(id, name) {
+            const confirmDelete = confirm(`Are you sure you want to stop selling "${name}" and delete it?`);
+            if (!confirmDelete) return;
+
+            statusMsg.innerText = `Deleting ${name}...`;
+
+            try {
+                await fetch(`${API_URL}?sheet=Sheet1&action=DELETE&id=${id}`, {
+                    method: "POST"
+                });
+                loadAllData();
+            } catch (error) {
+                alert("Failed to delete.");
+            }
+        }
+
+        loadAllData();
+        setInterval(loadAllData, 10000);
+    </script>
+</body>
+</html>
